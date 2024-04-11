@@ -11,3 +11,4 @@ glfw_binary
 CMakeFiles
 .vscode
 .DS_Store
+Makefile
