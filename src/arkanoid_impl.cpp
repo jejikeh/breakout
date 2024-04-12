@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 #include "utils.h"
+#include <imgui_internal.h>
 
 WorldSpace Entity::world_space = {};
 
@@ -14,22 +15,18 @@ Arkanoid* create_arkanoid()
 
 ArkanoidImpl::ArkanoidImpl()
 {
-    balls.push_back(new Ball(10, 245));
-    // balls.push_back(new Ball(49, 55));
+    balls.push_back(std::make_unique<Ball>(0, 0));
+    // balls.push_back(std::make_unique<Ball>(100, 100));
 
-    // blocks.push_back(new Block(100, 100));
-    // balls.push_back(Ball());
+    pad = std::make_unique<Pad>(0, 0);
+
+    current_settings = {};
 }
 
 void ArkanoidImpl::reset(const ArkanoidSettings& settings)
 {
-    // TODO:
-    // Implement your game world, bricks and
-    // carriage initialization
-    // ...
+    current_settings = settings;
 
-    // TODO:
-    // remove demo code
     Entity::world_space.world_size.x = settings.world_size[0];
     Entity::world_space.world_size.y = settings.world_size[1];
 
@@ -39,11 +36,12 @@ void ArkanoidImpl::reset(const ArkanoidSettings& settings)
     }
 
     init_blocks(settings);
-
     for (auto& block : blocks)
     {
         block->reset(settings);
     }
+
+    pad->reset(settings);
 }
 
 void ArkanoidImpl::update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
@@ -51,20 +49,38 @@ void ArkanoidImpl::update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elap
     Entity::world_space.world_to_screen =
         Vect(io.DisplaySize.x / Entity::world_space.world_size.x, io.DisplaySize.y / Entity::world_space.world_size.y);
 
-    // TODO:
-    // Implement you Arkanoid user input handling
-    // and game logic.
-    // ...
+    switch (game_state.state)
+    {
+    case ArkanoidState::Waiting:
+    {
+        if (io.KeysDown[GLFW_KEY_SPACE])
+        {
+            game_state.state = ArkanoidState::Playing;
+        }
 
-    // TODO:
-    // remove demo code
-    // demo_update(io, debug_data, elapsed);
+        break;
+    }
+    case ArkanoidState::Playing:
+    {
+        update_balls(io, debug_data, elapsed);
+        update_pad(io, debug_data, elapsed);
 
-    // for (auto& ball : balls)
-    // {
-    //     ball.update(io, debug_data, elapsed);
-    // }
-    update_balls(io, debug_data, elapsed);
+        if (io.KeysDown[GLFW_KEY_ESCAPE])
+        {
+            game_state.state = ArkanoidState::Waiting;
+        }
+
+        // if (io.KeysDown[GLFW_KEY_R])
+        // {
+        //     balls.push_back(std::make_unique<Ball>(400, 400));
+        //     balls.back()->reset(current_settings);
+        // }
+
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 void ArkanoidImpl::draw(ImGuiIO& io, ImDrawList& draw_list)
@@ -82,18 +98,61 @@ void ArkanoidImpl::draw(ImGuiIO& io, ImDrawList& draw_list)
     //     ball->draw(io, draw_list);
     // }
 
-    draw_balls(io, draw_list);
+    switch (game_state.state)
+    {
+    case ArkanoidState::Waiting:
+    {
+        draw_balls(io, draw_list);
+        draw_pad(io, draw_list);
+        draw_blocks(io, draw_list);
 
-    draw_blocks(io, draw_list);
+        draw_text_on_white_background(
+            draw_list, "Press SPACE to start game", current_settings.world_size[0] / 2, current_settings.world_size[1] / 2);
+
+        break;
+    }
+    case ArkanoidState::Playing:
+    {
+        draw_balls(io, draw_list);
+        draw_pad(io, draw_list);
+        draw_blocks(io, draw_list);
+
+        draw_game_play_info_ui(io, draw_list);
+
+        break;
+    }
+    case ArkanoidState::Won:
+    {
+        draw_balls(io, draw_list);
+        draw_pad(io, draw_list);
+        draw_blocks(io, draw_list);
+
+        break;
+    }
+    case ArkanoidState::Lost:
+    {
+        draw_balls(io, draw_list);
+        draw_pad(io, draw_list);
+        draw_blocks(io, draw_list);
+
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+    // draw_balls(io, draw_list);
+    // draw_blocks(io, draw_list);
+    // draw_pad(io, draw_list);
 }
 
-void ArkanoidImpl::draw_balls(ImGuiIO& io, ImDrawList& draw_list)
+void ArkanoidImpl::draw_balls(ImGuiIO& io, ImDrawList& draw_list) const
 {
     for (auto& ball : balls)
     {
-        Vect screen_pos = ball->transform.pos * Entity::world_space.world_to_screen;
-
-        float screen_radius = ball->radius * Entity::world_space.world_to_screen.x;
+        const auto screen_pos = ball->transform.pos * Entity::world_space.world_to_screen;
+        const auto screen_radius = ball->radius * Entity::world_space.world_to_screen.x;
 
         draw_list.AddCircle(screen_pos, screen_radius, ImColor(100, 255, 100));
     }
@@ -118,70 +177,104 @@ void ArkanoidImpl::draw_blocks(ImGuiIO& io, ImDrawList& draw_list) const
     }
 }
 
+void ArkanoidImpl::draw_pad(ImGuiIO& io, ImDrawList& draw_list) const
+{
+    const auto screen_pos = pad->transform.pos * Entity::world_space.world_to_screen;
+
+    const auto size = pad->transform.size * Entity::world_space.world_to_screen;
+
+    draw_list.AddRect(screen_pos, screen_pos + size, ImColor(255, 255, 255));
+}
+
 void ArkanoidImpl::update_balls(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
 {
     for (auto& ball : balls)
     {
-        // update ball position according
-        // its velocity and elapsed time
         ball->transform.pos += ball->velocity * elapsed;
 
-        if (ball->transform.pos.x < ball->radius)
-        {
-            ball->transform.pos.x += (ball->radius - ball->transform.pos.x) * 2.0f;
-            ball->velocity.x *= -1.0f;
+        handle_ball_hit_edge(ball.get(), io, debug_data, elapsed);
+        handle_ball_hit_blocks(ball.get(), io, debug_data, elapsed);
+        handle_ball_hit_pad(ball.get(), io, debug_data, elapsed);
+    }
+}
 
-            add_debug_hit(debug_data, ball->transform.pos, Vect(1.0f, 0.0f));
+void ArkanoidImpl::handle_ball_hit_edge(Ball* ball, ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
+{
+    if (ball->transform.pos.x < ball->radius)
+    {
+        ball->transform.pos.x += (ball->radius - ball->transform.pos.x) * 2.0f;
+        ball->velocity.x *= -1.0f;
+
+        add_debug_hit(debug_data, ball->transform.pos, Vect(1.0f, 0.0f));
+    }
+    else if (ball->transform.pos.x > (Entity::world_space.world_size.x - ball->radius))
+    {
+        ball->transform.pos -= (ball->transform.pos.x - (Entity::world_space.world_size.x - ball->radius)) * 2.0f;
+        ball->velocity.x *= -1.0f;
+
+        add_debug_hit(debug_data, ball->transform.pos, Vect(-1.0f, 0.0f));
+    }
+
+    if (ball->transform.pos.y < ball->radius)
+    {
+        ball->transform.pos.y += (ball->radius - ball->transform.pos.y) * 2.0f;
+        ball->velocity.y *= -1.0f;
+
+        add_debug_hit(debug_data, ball->transform.pos, Vect(0.0f, 1.0f));
+    }
+    else if (ball->transform.pos.y > (Entity::world_space.world_size.y - ball->radius))
+    {
+        ball->transform.pos.y -= (ball->transform.pos.y - (Entity::world_space.world_size.y - ball->radius)) * 2.0f;
+        ball->velocity.y *= -1.0f;
+
+        add_debug_hit(debug_data, ball->transform.pos, Vect(0.0f, -1.0f));
+    }
+}
+
+void ArkanoidImpl::handle_ball_hit_blocks(Ball* ball, ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
+{
+    for (auto& block : blocks)
+    {
+        if (block->state == BlockState::Dead)
+        {
+            continue;
         }
-        else if (ball->transform.pos.x > (Entity::world_space.world_size.x - ball->radius))
+
+        if (ball->check_ball_collision_with_transform(block->transform))
         {
-            ball->transform.pos -= (ball->transform.pos.x - (Entity::world_space.world_size.x - ball->radius)) * 2.0f;
-            ball->velocity.x *= -1.0f;
+            auto normal = ball->transform.pos - block->transform.pos;
+            normal.Normalize();
 
-            add_debug_hit(debug_data, ball->transform.pos, Vect(-1.0f, 0.0f));
-        }
+            ball->rebound_relative_to_normal(normal);
 
-        if (ball->transform.pos.y < ball->radius)
-        {
-            ball->transform.pos.y += (ball->radius - ball->transform.pos.y) * 2.0f;
-            ball->velocity.y *= -1.0f;
+            block->state = BlockState::Dead;
 
-            add_debug_hit(debug_data, ball->transform.pos, Vect(0.0f, 1.0f));
-        }
-        else if (ball->transform.pos.y > (Entity::world_space.world_size.y - ball->radius))
-        {
-            ball->transform.pos.y -= (ball->transform.pos.y - (Entity::world_space.world_size.y - ball->radius)) * 2.0f;
-            ball->velocity.y *= -1.0f;
+            game_state.score += 10;
 
-            add_debug_hit(debug_data, ball->transform.pos, Vect(0.0f, -1.0f));
-        }
-
-        for (auto& block : blocks)
-        {
-            if (block->state == BlockState::Dead)
-            {
-                continue;
-            }
-
-            if (ball->check_ball_collision_with_transform(block->transform))
-            {
-                Vect normal = ball->transform.pos - block->transform.pos;
-                normal.Normalize();
-
-                ball->rebound_relative_to_normal(normal);
-
-                block->state = BlockState::Dead;
-
-                add_debug_hit(debug_data, ball->transform.pos, normal);
-            }
+            add_debug_hit(debug_data, ball->transform.pos, normal);
         }
     }
 }
 
-float ArkanoidImpl::calculate_offset_to_center(const ArkanoidSettings& settings, Vect block_size)
+void ArkanoidImpl::handle_ball_hit_pad(Ball* ball, ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
+{
+    if (ball->check_ball_collision_with_transform(pad->transform))
+    {
+        auto normal = pad->transform.pos - ball->transform.pos;
+        normal.Normalize();
+
+        ball->rebound_relative_to_normal(normal);
+
+        ball->velocity.y = -abs(ball->velocity.y);
+
+        add_debug_hit(debug_data, ball->transform.pos, normal);
+    }
+}
+
+float ArkanoidImpl::calculate_brick_offset_to_center_x(const ArkanoidSettings& settings, Vect size)
 {
     return Entity::world_space.world_size.x / 2.0f -
-           (settings.bricks_columns_count * (((block_size.x) + settings.bricks_columns_padding) / 2.0f));
+           (settings.bricks_columns_count * (((size.x) + settings.bricks_columns_padding) / 2.0f));
 }
 
 void ArkanoidImpl::init_blocks(const ArkanoidSettings& settings)
@@ -191,7 +284,7 @@ void ArkanoidImpl::init_blocks(const ArkanoidSettings& settings)
     {
         for (int i = 0; i < settings.bricks_columns_max * settings.bricks_rows_max; i++)
         {
-            blocks.push_back(new Block(0, 0));
+            blocks.push_back(std::make_unique<Block>(0, 0));
         }
     }
     else
@@ -205,7 +298,7 @@ void ArkanoidImpl::init_blocks(const ArkanoidSettings& settings)
     // @Note(jejikeh): I decide to put bricks in the center, so they will cover the whole screen in any settings.
     auto block_size = settings.calculate_brick_size();
 
-    auto center_offset_x = calculate_offset_to_center(settings, block_size);
+    auto center_offset_x = calculate_brick_offset_to_center_x(settings, block_size);
 
     for (int y = 0; y < settings.bricks_rows_count; y++)
     {
@@ -213,7 +306,7 @@ void ArkanoidImpl::init_blocks(const ArkanoidSettings& settings)
 
         for (int x = 0; x < settings.bricks_columns_count; x++)
         {
-            auto block = blocks.at(y * settings.bricks_columns_count + x);
+            auto block = blocks.at(y * settings.bricks_columns_count + x).get();
 
             block->transform.pos.x = x * block_size.x + settings.bricks_columns_padding * (x + 1) + center_offset_x;
             block->transform.pos.y = pos_y;
@@ -222,10 +315,55 @@ void ArkanoidImpl::init_blocks(const ArkanoidSettings& settings)
     }
 }
 
+void ArkanoidImpl::update_pad(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
+{
+    if (io.KeysDown[ImGuiKey_D])
+    {
+        pad->target_velocity = pad->max_velocity;
+    }
+    else if (io.KeysDown[ImGuiKey_A])
+    {
+        pad->target_velocity = -pad->max_velocity;
+    }
+    else
+    {
+        pad->target_velocity = 0.0f;
+    }
+
+    pad->current_velocity = POD_LERP(pad->current_velocity, pad->target_velocity, pad->acceleration * elapsed);
+
+    pad->transform.pos.x += pad->current_velocity * elapsed;
+}
+
 void ArkanoidImpl::add_debug_hit(ArkanoidDebugData& debug_data, const Vect& world_pos, const Vect& normal)
 {
     ArkanoidDebugData::Hit hit;
     hit.screen_pos = world_pos * Entity::world_space.world_to_screen;
     hit.normal = normal;
     debug_data.hits.push_back(std::move(hit));
+}
+
+void ArkanoidImpl::draw_game_play_info_ui(ImGuiIO& io, ImDrawList& draw_list) const
+{
+    const auto world_size = current_settings.world_size;
+
+    const auto text = string_format("\tScore: \t\n\t%d", game_state.score);
+    const auto text_size = draw_text_on_white_background(draw_list, text.c_str(), world_size[0], world_size[1] * 0.9f);
+
+    const auto lives_text = string_format("\tLives: \t\n\t%d", game_state.lives);
+    draw_text_on_white_background(draw_list, lives_text.c_str(), world_size[0], world_size[1] - text_size.y);
+};
+
+ImVec2 ArkanoidImpl::draw_text_on_white_background(ImDrawList& draw_list, const char* text, float x, float y) const
+{
+    const auto text_size = ImGui::CalcTextSize(text);
+
+    const auto pos_x = (x - text_size.x / 2) * Entity::world_space.world_to_screen.x;
+    const auto pos_y = (y - text_size.y / 2) * Entity::world_space.world_to_screen.y;
+
+    draw_list.AddRectFilled(ImVec2(pos_x, pos_y), ImVec2(pos_x + text_size.x, pos_y + text_size.y), ImColor(255, 255, 255));
+
+    draw_list.AddText(ImVec2(pos_x, pos_y), ImColor(0, 0, 0), text);
+
+    return text_size;
 }

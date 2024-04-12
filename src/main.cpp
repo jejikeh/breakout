@@ -183,8 +183,16 @@ int main(int, char**)
                 "Ball speed", &arkanoid_settings.ball_speed, ArkanoidSettings::ball_speed_min, ArkanoidSettings::ball_speed_max);
 
             ImGui::Spacing();
+
+            ImGui::SliderFloat("Carriage speed", &arkanoid_settings.carriage_speed, 50.0f, ArkanoidSettings::carriage_speed_max);
+
             ImGui::SliderFloat(
                 "Carriage width", &arkanoid_settings.carriage_width, ArkanoidSettings::carriage_width_min, arkanoid_settings.world_size.x);
+
+            ImGui::SliderFloat(
+                "Carriage acceleration", &arkanoid_settings.carriage_acceleration, 1.0f, ArkanoidSettings::carriage_acceleration_max);
+
+            ImGui::Spacing();
 
             if (ImGui::Button("Reset"))
                 arkanoid->reset(arkanoid_settings);

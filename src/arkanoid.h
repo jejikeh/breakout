@@ -23,6 +23,9 @@ struct ArkanoidSettings
     static constexpr float ball_speed_min = 1.0f;
     static constexpr float ball_speed_max = 1000.0f;
 
+    static constexpr float carriage_speed_max = 500.0f;
+    static constexpr float carriage_acceleration_max = 20.0f;
+
     static constexpr float carriage_width_min = 50.0f;
 
     Vect world_size = Vect(800.0f, 600.f);
@@ -36,8 +39,10 @@ struct ArkanoidSettings
     float bricks_height = 3.0f;
 
     float ball_radius = 10.0f;
-    float ball_speed = 150.0f;
+    float ball_speed = 200.0f;
 
+    float carriage_speed = 200.0f;
+    float carriage_acceleration = 10.0f;
     float carriage_width = 100.0f;
 
     Vect calculate_brick_size() const

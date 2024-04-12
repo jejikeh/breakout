@@ -24,17 +24,17 @@ struct Ball : public Entity
     {
         if (transform.pos == Vect(0.0f))
         {
-            transform.pos = Entity::world_space.world_size / 2.0f;
+            transform.pos = Entity::world_space.world_size / 2.0f + Vect(0, 100.0f);
         }
 
         radius = settings.ball_radius;
         initial_speed = settings.ball_speed;
-        velocity = Vect(initial_speed);
+        velocity = Vect(-initial_speed);
     }
 
     void rebound_relative_to_normal(Vect normal)
     {
-        velocity = velocity - 2.0f * (Dot(normal, velocity)) * normal;
+        velocity = velocity - 2.0f * (DOT(normal, velocity)) * normal;
         keep_velocity_above_initial_speed();
     }
 
