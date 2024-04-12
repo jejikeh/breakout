@@ -64,6 +64,7 @@ void ArkanoidImpl::update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elap
     {
         update_balls(io, debug_data, elapsed);
         update_pad(io, debug_data, elapsed);
+        update_bonuses(io, debug_data, elapsed);
 
         if (io.KeysDown[GLFW_KEY_ESCAPE])
         {
@@ -116,6 +117,7 @@ void ArkanoidImpl::draw(ImGuiIO& io, ImDrawList& draw_list)
         draw_balls(io, draw_list);
         draw_pad(io, draw_list);
         draw_blocks(io, draw_list);
+        draw_bonuses(io, draw_list);
 
         draw_game_play_info_ui(io, draw_list);
 
@@ -247,6 +249,11 @@ void ArkanoidImpl::handle_ball_hit_blocks(Ball* ball, ImGuiIO& io, ArkanoidDebug
 
             ball->rebound_relative_to_normal(normal);
 
+            if (block->state == BlockState::WithBonus)
+            {
+                spawn_random_bonus(block->transform.pos.x, block->transform.pos.y);
+            }
+
             block->state = BlockState::Dead;
 
             game_state.score += 10;
@@ -366,4 +373,29 @@ ImVec2 ArkanoidImpl::draw_text_on_white_background(ImDrawList& draw_list, const 
     draw_list.AddText(ImVec2(pos_x, pos_y), ImColor(0, 0, 0), text);
 
     return text_size;
+}
+
+void ArkanoidImpl::draw_bonuses(ImGuiIO& io, ImDrawList& draw_list) const
+{
+    for (auto& bonus : bonuses)
+    {
+        const auto screen_pos = bonus->transform.pos * Entity::world_space.world_to_screen;
+
+        const auto size = bonus->transform.size * Entity::world_space.world_to_screen;
+
+        draw_list.AddRectFilled(screen_pos, screen_pos + size, ImColor(255, 255, 255));
+    }
+}
+
+void ArkanoidImpl::update_bonuses(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
+{
+    for (auto& bonus : bonuses)
+    {
+        bonus->transform.pos.y += bonus->fall_speed * elapsed;
+    }
+}
+
+void ArkanoidImpl::spawn_random_bonus(int x, int y)
+{
+    bonuses.push_back(std::make_unique<Bonus>(x, y));
 }

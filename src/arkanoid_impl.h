@@ -4,6 +4,7 @@
 #include "entities/ball.h"
 #include "entities/block.h"
 #include "entities/pad.h"
+#include "entities/bonus.h"
 
 #define USE_ARKANOID_IMPL
 
@@ -63,6 +64,13 @@ private:
     void update_pad(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed);
 
     void add_debug_hit(ArkanoidDebugData& debug_data, const Vect& world_pos, const Vect& normal);
+
+    // Bonuses
+    std::vector<std::unique_ptr<Bonus>> bonuses;
+
+    void draw_bonuses(ImGuiIO& io, ImDrawList& draw_list) const;
+    void update_bonuses(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed);
+    void spawn_random_bonus(int x, int y);
 
     // UI Stufd
     void draw_game_play_info_ui(ImGuiIO& io, ImDrawList& draw_list) const;
