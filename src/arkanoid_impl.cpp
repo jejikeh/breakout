@@ -42,6 +42,11 @@ void ArkanoidImpl::reset(const ArkanoidSettings& settings)
     }
 
     pad->reset(settings);
+
+    for (auto& bonus : bonuses)
+    {
+        bonus->reset(settings);
+    }
 }
 
 void ArkanoidImpl::update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
@@ -251,7 +256,8 @@ void ArkanoidImpl::handle_ball_hit_blocks(Ball* ball, ImGuiIO& io, ArkanoidDebug
 
             if (block->state == BlockState::WithBonus)
             {
-                spawn_random_bonus(block->transform.pos.x, block->transform.pos.y);
+                spawn_random_bonus(
+                    block->transform.pos.x + block->transform.size.x / 2, block->transform.pos.y + block->transform.size.y / 4);
             }
 
             block->state = BlockState::Dead;
@@ -377,13 +383,26 @@ ImVec2 ArkanoidImpl::draw_text_on_white_background(ImDrawList& draw_list, const 
 
 void ArkanoidImpl::draw_bonuses(ImGuiIO& io, ImDrawList& draw_list) const
 {
+    static float t_time = 0.0f;
+    t_time += 0.1f;
+
     for (auto& bonus : bonuses)
     {
         const auto screen_pos = bonus->transform.pos * Entity::world_space.world_to_screen;
-
         const auto size = bonus->transform.size * Entity::world_space.world_to_screen;
 
-        draw_list.AddRectFilled(screen_pos, screen_pos + size, ImColor(255, 255, 255));
+        if (t_time < 10.0f)
+        {
+            draw_list.AddRectFilled(screen_pos, screen_pos + size, ImColor(255, 255, 0));
+        }
+        else if (t_time > 10.0f && t_time < 20.0f)
+        {
+            draw_list.AddRect(screen_pos, screen_pos + size, ImColor(255, 255, 0));
+        }
+        else
+        {
+            t_time = 0.0f;
+        }
     }
 }
 
@@ -398,4 +417,5 @@ void ArkanoidImpl::update_bonuses(ImGuiIO& io, ArkanoidDebugData& debug_data, fl
 void ArkanoidImpl::spawn_random_bonus(int x, int y)
 {
     bonuses.push_back(std::make_unique<Bonus>(x, y));
+    bonuses.back().get()->reset(current_settings);
 }

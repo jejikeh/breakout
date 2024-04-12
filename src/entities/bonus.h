@@ -69,7 +69,7 @@ struct BonusSettings
 
 struct Bonus : Entity
 {
-    float fall_speed = 10.0f;
+    float fall_speed = 50.0f;
     BonusSettings settings;
 
     Bonus(int x, int y)
@@ -77,12 +77,12 @@ struct Bonus : Entity
         transform.pos.x = x;
         transform.pos.y = y;
 
-        transform.size = Vect(10.0f, 10.0f);
-
         settings = BonusSettings();
     }
 
     void reset(const ArkanoidSettings& settings)
     {
+        transform.size.y = settings.calculate_brick_size().y / 2;
+        transform.size.x = transform.size.y;
     }
 };
