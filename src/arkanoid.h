@@ -15,6 +15,9 @@ struct ArkanoidSettings
     static constexpr float bricks_rows_padding_min = 5.0f;
     static constexpr float bricks_rows_padding_max = 20.0f;
 
+    static constexpr float bricks_height_min = 1.0f;
+    static constexpr float bricks_height_max = 10.0f;
+
     static constexpr float ball_radius_min = 5.0f;
     static constexpr float ball_radius_max = 50.0f;
     static constexpr float ball_speed_min = 1.0f;
@@ -30,10 +33,19 @@ struct ArkanoidSettings
     float bricks_columns_padding = 5.0f;
     float bricks_rows_padding = 5.0f;
 
+    float bricks_height = 3.0f;
+
     float ball_radius = 10.0f;
     float ball_speed = 150.0f;
 
     float carriage_width = 100.0f;
+
+    Vect calculate_brick_size() const
+    {
+        return Vect(
+            world_size.x / bricks_columns_count - bricks_columns_padding,
+            (world_size.y / bricks_rows_count - bricks_rows_padding) / bricks_height);
+    }
 };
 
 struct ArkanoidDebugData

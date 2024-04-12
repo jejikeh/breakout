@@ -5,14 +5,14 @@
 
 struct Transform
 {
-    Vect pos, rot;
+    Vect pos;
+    Vect size;
 
     Transform() = default;
 
-    void set(const Vect& pos, const Vect& rot)
+    void set(const Vect& pos)
     {
         this->pos = pos;
-        this->rot = rot;
     }
 };
 

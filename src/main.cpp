@@ -107,7 +107,7 @@ int main(int, char**)
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
 
-    ImVec4 clear_color = ImVec4(0.05f, 0.075f, 0.1f, 1.00f);
+    ImVec4 clear_color = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
 
     // Create gameplay and settings classes
     ArkanoidDebugData arkanoid_debug_data;
@@ -155,6 +155,8 @@ int main(int, char**)
             ImGui::SliderInt(
                 "Bricks rows", &arkanoid_settings.bricks_rows_count, ArkanoidSettings::bricks_rows_min, ArkanoidSettings::bricks_rows_max);
 
+            ImGui::Spacing();
+
             ImGui::SliderFloat(
                 "Bricks padding columns",
                 &arkanoid_settings.bricks_columns_padding,
@@ -165,6 +167,14 @@ int main(int, char**)
                 &arkanoid_settings.bricks_rows_padding,
                 ArkanoidSettings::bricks_rows_padding_min,
                 ArkanoidSettings::bricks_rows_padding_max);
+
+            ImGui::Spacing();
+
+            ImGui::SliderFloat(
+                "Bricks height",
+                &arkanoid_settings.bricks_height,
+                ArkanoidSettings::bricks_height_min,
+                ArkanoidSettings::bricks_height_max);
 
             ImGui::Spacing();
             ImGui::SliderFloat(
