@@ -10,9 +10,42 @@ struct Transform
 
     Transform() = default;
 
-    void set(const Vect& pos)
+    void set_position(const Vect& pos)
     {
         this->pos = pos;
+    }
+
+    void set_size(const Vect& s)
+    {
+
+        this->size = s;
+    }
+};
+
+struct CircleCollider
+{
+    Transform* transform;
+
+    float radius;
+
+    CircleCollider(Transform* t)
+    {
+        transform = t;
+    }
+
+    bool check_collision_with_transform(const Transform& other) const
+    {
+        const auto closestX = std::clamp(transform->pos.x, other.pos.x, other.pos.x + other.size.x);
+        const auto closestY = std::clamp(transform->pos.y, other.pos.y, other.pos.y + other.size.y);
+
+        Vect distance = Vect(transform->pos.x - closestX, transform->pos.y - closestY);
+
+        return distance.LengthSquared() < (radius * radius);
+    }
+
+    void set_radius(float radius)
+    {
+        this->radius = radius;
     }
 };
 

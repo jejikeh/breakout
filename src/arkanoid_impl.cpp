@@ -4,6 +4,9 @@
 #include "utils.h"
 #include <imgui_internal.h>
 
+#define BONUS_BLINK_ANIMATION_ON_TIME 5.0f
+#define BONUS_BLINK_ANIMTATION_OFF_TIME 10.0f
+
 WorldSpace Entity::world_space = {};
 
 #ifdef USE_ARKANOID_IMPL
@@ -75,12 +78,6 @@ void ArkanoidImpl::update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elap
         {
             game_state.state = ArkanoidState::Waiting;
         }
-
-        // if (io.KeysDown[GLFW_KEY_R])
-        // {
-        //     balls.push_back(std::make_unique<Ball>(400, 400));
-        //     balls.back()->reset(current_settings);
-        // }
 
         break;
     }
@@ -159,7 +156,7 @@ void ArkanoidImpl::draw_balls(ImGuiIO& io, ImDrawList& draw_list) const
     for (auto& ball : balls)
     {
         const auto screen_pos = ball->transform.pos * Entity::world_space.world_to_screen;
-        const auto screen_radius = ball->radius * Entity::world_space.world_to_screen.x;
+        const auto screen_radius = ball->radius() * Entity::world_space.world_to_screen.x;
 
         draw_list.AddCircle(screen_pos, screen_radius, ImColor(100, 255, 100));
     }
@@ -207,31 +204,31 @@ void ArkanoidImpl::update_balls(ImGuiIO& io, ArkanoidDebugData& debug_data, floa
 
 void ArkanoidImpl::handle_ball_hit_edge(Ball* ball, ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
 {
-    if (ball->transform.pos.x < ball->radius)
+    if (ball->transform.pos.x < ball->radius())
     {
-        ball->transform.pos.x += (ball->radius - ball->transform.pos.x) * 2.0f;
+        ball->transform.pos.x += (ball->radius() - ball->transform.pos.x) * 2.0f;
         ball->velocity.x *= -1.0f;
 
         add_debug_hit(debug_data, ball->transform.pos, Vect(1.0f, 0.0f));
     }
-    else if (ball->transform.pos.x > (Entity::world_space.world_size.x - ball->radius))
+    else if (ball->transform.pos.x > (Entity::world_space.world_size.x - ball->radius()))
     {
-        ball->transform.pos -= (ball->transform.pos.x - (Entity::world_space.world_size.x - ball->radius)) * 2.0f;
+        ball->transform.pos -= (ball->transform.pos.x - (Entity::world_space.world_size.x - ball->radius())) * 2.0f;
         ball->velocity.x *= -1.0f;
 
         add_debug_hit(debug_data, ball->transform.pos, Vect(-1.0f, 0.0f));
     }
 
-    if (ball->transform.pos.y < ball->radius)
+    if (ball->transform.pos.y < ball->radius())
     {
-        ball->transform.pos.y += (ball->radius - ball->transform.pos.y) * 2.0f;
+        ball->transform.pos.y += (ball->radius() - ball->transform.pos.y) * 2.0f;
         ball->velocity.y *= -1.0f;
 
         add_debug_hit(debug_data, ball->transform.pos, Vect(0.0f, 1.0f));
     }
-    else if (ball->transform.pos.y > (Entity::world_space.world_size.y - ball->radius))
+    else if (ball->transform.pos.y > (Entity::world_space.world_size.y - ball->radius()))
     {
-        ball->transform.pos.y -= (ball->transform.pos.y - (Entity::world_space.world_size.y - ball->radius)) * 2.0f;
+        ball->transform.pos.y -= (ball->transform.pos.y - (Entity::world_space.world_size.y - ball->radius())) * 2.0f;
         ball->velocity.y *= -1.0f;
 
         add_debug_hit(debug_data, ball->transform.pos, Vect(0.0f, -1.0f));
@@ -247,7 +244,7 @@ void ArkanoidImpl::handle_ball_hit_blocks(Ball* ball, ImGuiIO& io, ArkanoidDebug
             continue;
         }
 
-        if (ball->check_ball_collision_with_transform(block->transform))
+        if (ball->circle_collider->check_collision_with_transform(block->transform))
         {
             auto normal = ball->transform.pos - block->transform.pos;
             normal.Normalize();
@@ -271,7 +268,7 @@ void ArkanoidImpl::handle_ball_hit_blocks(Ball* ball, ImGuiIO& io, ArkanoidDebug
 
 void ArkanoidImpl::handle_ball_hit_pad(Ball* ball, ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
 {
-    if (ball->check_ball_collision_with_transform(pad->transform))
+    if (ball->circle_collider->check_collision_with_transform(pad->transform))
     {
         auto normal = pad->transform.pos - ball->transform.pos;
         normal.Normalize();
@@ -388,16 +385,21 @@ void ArkanoidImpl::draw_bonuses(ImGuiIO& io, ImDrawList& draw_list) const
 
     for (auto& bonus : bonuses)
     {
-        const auto screen_pos = bonus->transform.pos * Entity::world_space.world_to_screen;
-        const auto size = bonus->transform.size * Entity::world_space.world_to_screen;
-
-        if (t_time < 10.0f)
+        if (!bonus->enabled)
         {
-            draw_list.AddRectFilled(screen_pos, screen_pos + size, ImColor(255, 255, 0));
+            continue;
         }
-        else if (t_time > 10.0f && t_time < 20.0f)
+
+        const auto screen_pos = bonus->transform.pos * Entity::world_space.world_to_screen;
+        const auto size = bonus->cirlce_collider->radius * Entity::world_space.world_to_screen;
+
+        if (t_time < BONUS_BLINK_ANIMATION_ON_TIME)
         {
-            draw_list.AddRect(screen_pos, screen_pos + size, ImColor(255, 255, 0));
+            draw_list.AddCircle(screen_pos, size.Length(), ImColor(255, 255, 0));
+        }
+        else if (t_time > BONUS_BLINK_ANIMATION_ON_TIME && t_time < BONUS_BLINK_ANIMTATION_OFF_TIME)
+        {
+            draw_list.AddCircleFilled(screen_pos, size.Length(), ImColor(255, 255, 0));
         }
         else
         {
@@ -406,12 +408,88 @@ void ArkanoidImpl::draw_bonuses(ImGuiIO& io, ImDrawList& draw_list) const
     }
 }
 
+void ArkanoidImpl::apply_bonus(Bonus* bonus)
+{
+    switch (bonus->settings.type)
+    {
+    case BonusType::PadSize:
+    {
+        pad->set_width(pad->transform.size.x - bonus->settings.value);
+
+        break;
+    }
+
+    case BonusType::PadSpeed:
+        pad->speed_modifier += bonus->settings.value;
+        pad->reset(current_settings);
+
+        break;
+    case BonusType::BallSize:
+    {
+        for (auto& ball : balls)
+        {
+            ball->circle_collider->set_radius(ball.get()->transform.size.x - bonus->settings.value);
+        }
+
+        break;
+    }
+    case BonusType::BallSpeed:
+    {
+        for (auto& ball : balls)
+        {
+            ball->speed_modifier += bonus->settings.value;
+            ball->reset(current_settings);
+        }
+
+        break;
+    }
+    case BonusType::AddHealth:
+    {
+        game_state.lives += bonus->settings.value;
+
+        break;
+    }
+    case BonusType::Score:
+    {
+        game_state.score += bonus->settings.value;
+
+        break;
+    }
+    case BonusType::NewBall:
+    {
+        balls.push_back(std::make_unique<Ball>(pad.get()->transform.pos.x, pad.get()->transform.pos.y));
+        balls.back().get()->reset(current_settings);
+
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 void ArkanoidImpl::update_bonuses(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed)
 {
     for (auto& bonus : bonuses)
     {
+        if (!bonus->enabled)
+        {
+            continue;
+        }
+
         bonus->transform.pos.y += bonus->fall_speed * elapsed;
+
+        if (bonus->cirlce_collider->check_collision_with_transform(pad->transform))
+        {
+            apply_bonus(bonus.get());
+            bonus->enabled = false;
+        }
     }
+}
+
+void ArkanoidImpl::draw_bonus_text(ImDrawList& draw_list, const char* text) const
+{
+
+    draw_text_on_white_background()
 }
 
 void ArkanoidImpl::spawn_random_bonus(int x, int y)

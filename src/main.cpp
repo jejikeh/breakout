@@ -187,10 +187,27 @@ int main(int, char**)
             ImGui::SliderFloat("Carriage speed", &arkanoid_settings.carriage_speed, 50.0f, ArkanoidSettings::carriage_speed_max);
 
             ImGui::SliderFloat(
-                "Carriage width", &arkanoid_settings.carriage_width, ArkanoidSettings::carriage_width_min, arkanoid_settings.world_size.x);
+                "Carriage width",
+                &arkanoid_settings.carriage_width,
+                ArkanoidSettings::carriage_width_min,
+                ArkanoidSettings::carriage_width_max);
 
             ImGui::SliderFloat(
-                "Carriage acceleration", &arkanoid_settings.carriage_acceleration, 1.0f, ArkanoidSettings::carriage_acceleration_max);
+                "Carriage acceleration",
+                &arkanoid_settings.carriage_acceleration,
+                ArkanoidSettings::carriage_acceleration_min,
+                ArkanoidSettings::carriage_acceleration_max);
+
+            ImGui::Spacing();
+
+            ImGui::SliderFloat(
+                "Bonus Radius", &arkanoid_settings.bonus_radius, ArkanoidSettings::bonus_radius_min, ArkanoidSettings::bonus_radius_max);
+
+            ImGui::SliderFloat(
+                "Bonus fall speed",
+                &arkanoid_settings.bonus_fall_speed,
+                ArkanoidSettings::bonus_fall_speed_min,
+                ArkanoidSettings::bonus_fall_speed_max);
 
             ImGui::Spacing();
 

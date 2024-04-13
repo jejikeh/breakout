@@ -71,9 +71,11 @@ private:
     void draw_bonuses(ImGuiIO& io, ImDrawList& draw_list) const;
     void update_bonuses(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed);
     void spawn_random_bonus(int x, int y);
+    void apply_bonus(Bonus* bonus);
 
     // UI Stufd
     void draw_game_play_info_ui(ImGuiIO& io, ImDrawList& draw_list) const;
 
+    void draw_bonus_text(ImDrawList& draw_list, const char* text) const;
     ImVec2 draw_text_on_white_background(ImDrawList& draw_list, const char* text, float x, float y) const;
 };
