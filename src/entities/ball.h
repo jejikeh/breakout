@@ -37,6 +37,8 @@ struct Ball : public Entity
         velocity = Vect(-initial_speed * speed_modifier);
 
         circle_collider->set_radius(settings.ball_radius);
+
+        speed_modifier = 1.0f;
     }
 
     void rebound_relative_to_normal(Vect normal)

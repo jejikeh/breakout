@@ -28,10 +28,11 @@ void ArkanoidImpl::reset(const ArkanoidSettings& settings)
 
     world_space.world_size = settings.world_size;
 
-    for (auto& ball : balls)
-    {
-        ball->reset(settings);
-    }
+    game_state.reset();
+
+    // @Note(jejikeh): delete all balls except the first one
+    balls.erase(balls.begin() + 1, balls.end());
+    balls.back()->reset(settings);
 
     init_blocks(settings);
     for (auto& block : blocks)
@@ -43,10 +44,7 @@ void ArkanoidImpl::reset(const ArkanoidSettings& settings)
     pad->transform.pos.x = settings.world_size.x / 2.0f - pad->transform.size.x / 2.0f;
     pad->transform.pos.y = settings.world_size.y - pad->transform.size.y - settings.bricks_rows_padding * 2.0f;
 
-    for (auto& bonus : bonuses)
-    {
-        bonus->reset(settings);
-    }
+    bonuses.clear();
 
     bonuse_message->reset(settings);
 }
@@ -78,10 +76,36 @@ void ArkanoidImpl::update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elap
             game_state.state = ArkanoidState::Waiting;
         }
 
+        if (game_state.lives <= 0)
+        {
+            game_state.state = ArkanoidState::Lost;
+        }
+
+        if (game_state.blocks_destroyed >= current_settings.bricks_columns_count * current_settings.bricks_rows_count)
+        {
+            game_state.state = ArkanoidState::Won;
+        }
+
         break;
     }
-    default:
+    case ArkanoidState::Won:
+    {
+        if (io.KeysDown[GLFW_KEY_SPACE])
+        {
+            reset(current_settings);
+            game_state.state = ArkanoidState::Playing;
+        }
+
         break;
+    }
+    case ArkanoidState::Lost:
+    {
+        if (io.KeysDown[GLFW_KEY_SPACE])
+        {
+            reset(current_settings);
+            game_state.state = ArkanoidState::Playing;
+        }
+    }
     }
 }
 
@@ -119,6 +143,9 @@ void ArkanoidImpl::draw(ImGuiIO& io, ImDrawList& draw_list)
         draw_pad(io, draw_list);
         draw_blocks(io, draw_list);
 
+        const auto text = string_format("\tYou won!\n\tScore: %d \n\n Press SPACE to start new game", game_state.score).c_str();
+        draw_text_on_white_background(draw_list, text, current_settings.world_size[0] / 2, current_settings.world_size[1] / 2);
+
         break;
     }
     case ArkanoidState::Lost:
@@ -127,10 +154,9 @@ void ArkanoidImpl::draw(ImGuiIO& io, ImDrawList& draw_list)
         draw_pad(io, draw_list);
         draw_blocks(io, draw_list);
 
-        break;
-    }
-    default:
-    {
+        const auto text = string_format("\tYou lost!\n\tScore: %d  \n\n Press SPACE to start new game", game_state.score).c_str();
+        draw_text_on_white_background(draw_list, text, current_settings.world_size[0] / 2, current_settings.world_size[1] / 2);
+
         break;
     }
     }
@@ -244,7 +270,7 @@ void ArkanoidImpl::handle_ball_hit_blocks(Ball* ball, ImGuiIO& io, ArkanoidDebug
 
             block->state = BlockState::Dead;
 
-            game_state.score += 10;
+            game_state.handle_destroy_block();
 
             add_debug_hit(debug_data, ball->transform.pos, normal);
         }

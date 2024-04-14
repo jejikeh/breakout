@@ -19,11 +19,25 @@ enum class ArkanoidState
 
 struct ArkanoidGameState
 {
+    int blocks_destroyed = 0;
     int score = 0;
     int lives = 3;
     ArkanoidState state = ArkanoidState::Waiting;
 
     ArkanoidGameState() = default;
+
+    void handle_destroy_block()
+    {
+        blocks_destroyed++;
+        score += 10;
+    }
+
+    void reset()
+    {
+        blocks_destroyed = 0;
+        score = 0;
+        lives = 3;
+    }
 };
 
 class ArkanoidImpl : public Arkanoid

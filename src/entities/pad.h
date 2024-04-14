@@ -25,6 +25,8 @@ struct Pad : Entity
 
         transform.size.x = settings.carriage_width;
         transform.size.y = settings.calculate_brick_size().y;
+
+        speed_modifier = 1.0f;
     }
 
     void set_width(float width)
