@@ -16,7 +16,7 @@ struct Ball : public Entity
     float speed_modifier = 1.0f;
     Vect velocity = Vect(0.0f);
 
-    Ball(int x, int y)
+    Ball(Arkanoid* a, int x, int y) : Entity(a)
     {
         transform.pos.x = x;
         transform.pos.y = y;
@@ -28,7 +28,7 @@ struct Ball : public Entity
     {
         if (transform.pos == Vect(0.0f))
         {
-            transform.pos = Entity::world_space.world_size / 2.0f + Vect(0, 100.0f);
+            transform.pos = arkanoid->world_space.world_size / 2.0f + Vect(0, 100.0f);
         }
 
         transform.size.x = settings.ball_radius;
@@ -47,15 +47,12 @@ struct Ball : public Entity
 
     void keep_velocity_above_initial_speed()
     {
-        // @Note(jejikeh): I specificly handle here abs y, because if we get some bad angle, ball will be wery slowly
-        // aproach the bottom of the screen, and thats not fun.
         if (abs(velocity.y) < initial_speed)
         {
             velocity.y = initial_speed * (velocity.y > 0.0f ? 1.0f : -1.0f);
             velocity.y *= speed_modifier;
         }
 
-        // @Note(jejkeh): This can be removed to speedup ball after some time.
         if (velocity.x > initial_speed)
         {
             velocity.x = initial_speed * speed_modifier;
@@ -72,12 +69,4 @@ struct Ball : public Entity
     {
         return circle_collider->radius;
     }
-
-    // @Note(jejikeh): I want keep things realy simple, so
-    // i decide to not add some complex logic to Entities.
-    // Because this leads to more complex entity managment.
-
-    // void update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed) override;
-
-    // void draw(ImGuiIO& io, ImDrawList& draw_list) override;
 };

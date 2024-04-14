@@ -5,6 +5,7 @@
 #include "entities/block.h"
 #include "entities/pad.h"
 #include "entities/bonus.h"
+#include "entities/bonus_ui_message.h"
 
 #define USE_ARKANOID_IMPL
 
@@ -33,8 +34,6 @@ public:
     void reset(const ArkanoidSettings& settings) override;
     void update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed) override;
     void draw(ImGuiIO& io, ImDrawList& draw_list) override;
-
-    ArkanoidSettings current_settings;
 
 private:
     ArkanoidGameState game_state;
@@ -74,8 +73,11 @@ private:
     void apply_bonus(Bonus* bonus);
 
     // UI Stufd
-    void draw_game_play_info_ui(ImGuiIO& io, ImDrawList& draw_list) const;
+    std::unique_ptr<BonusUIMessage> bonuse_message;
 
-    void draw_bonus_text(ImDrawList& draw_list, const char* text) const;
+    void draw_bonuses_message(ImGuiIO& io, ImDrawList& draw_list) const;
+    void update_bonuses_message(ImGuiIO& io, ArkanoidDebugData& debug_data, float elapsed);
+
+    void draw_game_play_info_ui(ImGuiIO& io, ImDrawList& draw_list) const;
     ImVec2 draw_text_on_white_background(ImDrawList& draw_list, const char* text, float x, float y) const;
 };

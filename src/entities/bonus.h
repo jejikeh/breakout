@@ -1,15 +1,18 @@
 #pragma once
 
 #include "../base.h"
+#include "../utils.h"
 #include "entity.h"
 
-#define PAD_SIZE_MAX_MODIFIER 10
 #define PAD_SPEED_MAX_MODIFIER 2
 #define BALL_SIZE_MAX_MODIFIER 2
 #define BALL_SPEED_MAX_MODIFIER 2
 #define ADD_HEALTH_MAX_MODIFIER 3
 #define SCORE_MAX_MODIFIER 100
 #define NEW_BALL_MAX_MODIFIER 3
+
+#define BONUS_BLINK_ANIMATION_ON_TIME 5.0f
+#define BONUS_BLINK_ANIMTATION_OFF_TIME 10.0f
 
 enum class BonusType
 {
@@ -28,7 +31,7 @@ struct BonusSettings
     float value = 0.0f;
     BonusType type;
 
-    BonusSettings()
+    BonusSettings(ArkanoidSettings& settings)
     {
         type = static_cast<BonusType>(rand() % static_cast<int>(BonusType::Count));
         // type = BonusType::BallSize;
@@ -37,83 +40,132 @@ struct BonusSettings
         {
         case BonusType::PadSize:
         {
-            value = random_value(PAD_SIZE_MAX_MODIFIER);
+            value = random_float(settings.bonus_pad_size_modifier);
 
             break;
         }
         case BonusType::PadSpeed:
         {
-            value = random_value(PAD_SPEED_MAX_MODIFIER);
+            value = random_float(PAD_SPEED_MAX_MODIFIER);
 
             break;
         }
         case BonusType::BallSize:
         {
-            value = random_value(BALL_SIZE_MAX_MODIFIER);
+            value = random_float(BALL_SIZE_MAX_MODIFIER);
 
             break;
         }
         case BonusType::BallSpeed:
         {
-            value = random_value(BALL_SPEED_MAX_MODIFIER);
+            value = random_float(BALL_SPEED_MAX_MODIFIER);
 
             break;
         }
         case BonusType::AddHealth:
         {
-            value = random_value(ADD_HEALTH_MAX_MODIFIER);
+            value = random_int(ADD_HEALTH_MAX_MODIFIER);
 
             break;
         }
         case BonusType::Score:
         {
-            value = random_value(SCORE_MAX_MODIFIER);
+            value = random_int(SCORE_MAX_MODIFIER);
 
             break;
         }
         case BonusType::NewBall:
         {
-            value = random_value(NEW_BALL_MAX_MODIFIER);
+            value = random_int(NEW_BALL_MAX_MODIFIER);
 
             break;
         }
         }
-
-        // value *= rand_r((unsigned int*)1) == 0 ? -1 : 1;
     };
 
-private:
-    static inline float random_value(int max)
+    std::string message()
     {
-        return rand() % max + 1;
+        switch (type)
+        {
+        case BonusType::PadSize:
+        {
+            return "Pad size bonus " + std::to_string(value);
+        }
+        case BonusType::PadSpeed:
+        {
+            return "Pad speed bonus " + std::to_string(value);
+        }
+        case BonusType::BallSize:
+        {
+            return "Ball size bonus " + std::to_string(value);
+        }
+        case BonusType::BallSpeed:
+        {
+            return "Ball speed bonus " + std::to_string(value);
+        }
+        case BonusType::AddHealth:
+        {
+            return "Health bonus " + std::to_string(value);
+        }
+        case BonusType::Score:
+        {
+            return "Score bonus " + std::to_string(value);
+        }
+        }
+
+        return "Bonus " + std::to_string(value);
     }
 };
 
 struct Bonus : Entity
 {
     CircleCollider* cirlce_collider;
+    BonusSettings* settings;
 
     float fall_speed;
-    BonusSettings settings;
 
     bool enabled = true;
 
-    Bonus(int x, int y)
+    Bonus(Arkanoid* a, int x, int y) : Entity(a)
     {
         transform.pos.x = x;
         transform.pos.y = y;
 
-        settings = BonusSettings();
+        settings = new BonusSettings(a->current_settings);
+
         cirlce_collider = new CircleCollider(&transform);
+    }
+
+    void draw(ImGuiIO& io, ImDrawList& draw_list)
+    {
+        static float t_time = 0.0f;
+        t_time += 0.1f;
+
+        if (!enabled)
+        {
+            return;
+        }
+
+        const auto screen_pos = transform.pos * arkanoid->world_space.world_to_screen;
+        const auto size = cirlce_collider->radius * arkanoid->world_space.world_to_screen;
+
+        if (t_time < BONUS_BLINK_ANIMATION_ON_TIME)
+        {
+            draw_list.AddCircle(screen_pos, size.Length(), ImColor(255, 255, 0));
+        }
+        else if (t_time > BONUS_BLINK_ANIMATION_ON_TIME && t_time < BONUS_BLINK_ANIMTATION_OFF_TIME)
+        {
+            draw_list.AddCircleFilled(screen_pos, size.Length(), ImColor(255, 255, 0));
+        }
+        else
+        {
+            t_time = 0.0f;
+        }
     }
 
     void reset(const ArkanoidSettings& settings)
     {
         fall_speed = settings.bonus_fall_speed;
-
-        // transform.size.y = settings.calculate_brick_size().y / 4;
-        // transform.size.x = transform.size.y;
-
         cirlce_collider->set_radius(settings.bonus_radius);
     }
 };

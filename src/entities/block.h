@@ -16,7 +16,7 @@ struct Block : Entity
 {
     BlockState state = BlockState::Dead;
 
-    Block(int x, int y)
+    Block(Arkanoid* a, int x, int y) : Entity(a)
     {
         transform.pos.x = x;
         transform.pos.y = y;

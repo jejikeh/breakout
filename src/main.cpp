@@ -211,6 +211,30 @@ int main(int, char**)
 
             ImGui::Spacing();
 
+            ImGui::SliderFloat(
+                "Bonus Message Duration (s)",
+                &arkanoid_settings.bonus_message_duration,
+                arkanoid_settings.bonus_message_duration_min,
+                arkanoid_settings.bonus_message_duration_max);
+
+            ImGui::Spacing();
+
+            ImGui::Text("Bonus Settings");
+
+            ImGui::SliderFloat(
+                "Chances to spawn bonus",
+                &arkanoid_settings.chance_to_spawn_brick_bonus,
+                arkanoid_settings.chance_to_spawn_brick_bonus_min,
+                arkanoid_settings.chance_to_spawn_brick_bonus_max);
+
+            ImGui::SliderFloat(
+                "Pad size modifier",
+                &arkanoid_settings.bonus_pad_size_modifier,
+                arkanoid_settings.bonus_pad_size_modifier_min,
+                arkanoid_settings.bonus_pad_size_modifier_max);
+
+            ImGui::Spacing();
+
             if (ImGui::Button("Reset"))
                 arkanoid->reset(arkanoid_settings);
 

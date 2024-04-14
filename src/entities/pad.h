@@ -12,7 +12,7 @@ struct Pad : Entity
 
     float acceleration = 1.0f;
 
-    Pad(int x, int y)
+    Pad(Arkanoid* a, int x, int y) : Entity(a)
     {
         transform.pos.x = x;
         transform.pos.y = y;
@@ -25,9 +25,6 @@ struct Pad : Entity
 
         transform.size.x = settings.carriage_width;
         transform.size.y = settings.calculate_brick_size().y;
-
-        transform.pos.x = settings.world_size[0] / 2.0f - transform.size.x / 2.0f;
-        transform.pos.y = settings.world_size[1] - transform.size.y - settings.bricks_rows_padding * 2.0f;
     }
 
     void set_width(float width)
