@@ -20,8 +20,12 @@ enum class ArkanoidState
 struct ArkanoidGameState
 {
     int blocks_destroyed = 0;
+
     int score = 0;
+    int high_score = 0;
+
     int lives = 3;
+
     ArkanoidState state = ArkanoidState::Waiting;
 
     ArkanoidGameState() = default;
@@ -34,9 +38,24 @@ struct ArkanoidGameState
 
     void reset()
     {
+        if (score > high_score)
+        {
+            high_score = score;
+        }
+
         blocks_destroyed = 0;
         score = 0;
         lives = 3;
+    }
+
+    void decrement_lives()
+    {
+        lives--;
+
+        if (lives <= 0)
+        {
+            state = ArkanoidState::Lost;
+        }
     }
 };
 

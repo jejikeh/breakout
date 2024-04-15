@@ -143,8 +143,10 @@ void ArkanoidImpl::draw(ImGuiIO& io, ImDrawList& draw_list)
         draw_pad(io, draw_list);
         draw_blocks(io, draw_list);
 
-        const auto text = string_format("\tYou won!\n\tScore: %d \n\n Press SPACE to start new game", game_state.score).c_str();
-        draw_text_on_white_background(draw_list, text, current_settings.world_size[0] / 2, current_settings.world_size[1] / 2);
+        const auto text =
+            string_format("You won! \nScore: %d \nHigh score: %d \nPress SPACE to start new game", game_state.score, game_state.high_score);
+
+        draw_text_on_white_background(draw_list, text.c_str(), current_settings.world_size[0] / 2, current_settings.world_size[1] / 2);
 
         break;
     }
@@ -154,8 +156,10 @@ void ArkanoidImpl::draw(ImGuiIO& io, ImDrawList& draw_list)
         draw_pad(io, draw_list);
         draw_blocks(io, draw_list);
 
-        const auto text = string_format("\tYou lost!\n\tScore: %d  \n\n Press SPACE to start new game", game_state.score).c_str();
-        draw_text_on_white_background(draw_list, text, current_settings.world_size[0] / 2, current_settings.world_size[1] / 2);
+        const auto text = string_format(
+            "You Lost! \nScore: %d \nHigh score: %d \nPress SPACE to start new game", game_state.score, game_state.high_score);
+
+        draw_text_on_white_background(draw_list, text.c_str(), current_settings.world_size[0] / 2, current_settings.world_size[1] / 2);
 
         break;
     }
@@ -243,6 +247,8 @@ void ArkanoidImpl::handle_ball_hit_edge(Ball* ball, ImGuiIO& io, ArkanoidDebugDa
         ball->velocity.y *= -1.0f;
 
         add_debug_hit(debug_data, ball->transform.pos, Vect(0.0f, -1.0f));
+
+        game_state.decrement_lives();
     }
 }
 
