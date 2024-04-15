@@ -30,8 +30,9 @@ struct ArkanoidSettings
 
     static constexpr float bonus_radius_min = 1.0f;
     static constexpr float bonus_radius_max = 10.0f;
-    static constexpr float bonus_fall_speed_max = 100.0f;
-    static constexpr float bonus_fall_speed_min = 1.0f;
+
+    static constexpr float bonus_fall_speed_max = 300.0f;
+    static constexpr float bonus_fall_speed_min = 50.0f;
 
     static constexpr float carriage_width_min = 50.0f;
     static constexpr float carriage_width_max = 200.0f;
@@ -42,8 +43,26 @@ struct ArkanoidSettings
     static constexpr float chance_to_spawn_brick_bonus_min = 0.01f;
     static constexpr float chance_to_spawn_brick_bonus_max = 1.0f;
 
-    static constexpr float bonus_pad_size_modifier_max = 10.0f;
     static constexpr float bonus_pad_size_modifier_min = 0.1f;
+    static constexpr float bonus_pad_size_modifier_max = 10.0f;
+
+    static constexpr float bonus_pad_speed_modifier_min = 0.1f;
+    static constexpr float bonus_pad_speed_modifier_max = 2.0f;
+
+    static constexpr float bonus_ball_speed_modifier_min = 0.1f;
+    static constexpr float bonus_ball_speed_modifier_max = 2.0f;
+
+    static constexpr float bonus_ball_size_modifier_min = 0.1f;
+    static constexpr float bonus_ball_size_modifier_max = 10.1f;
+
+    static constexpr float bonus_add_health_min = 2.0f;
+    static constexpr float bonus_add_health_max = 4.0f;
+
+    static constexpr float bonus_score_modifier_min = 1.0f;
+    static constexpr float bonus_score_modifier_max = 100.0f;
+
+    static constexpr float bonus_new_ball_min = 1.0f;
+    static constexpr float bonus_new_ball_max = 10.0f;
 
     Vect world_size = Vect(800.0f, 600.f);
 
@@ -63,13 +82,23 @@ struct ArkanoidSettings
     float carriage_width = 100.0f;
 
     float bonus_radius = 5.0f;
-    float bonus_fall_speed = 50.0f;
+    float bonus_fall_speed = 100.0f;
 
     float bonus_message_duration = 2.0f;
 
-    float chance_to_spawn_brick_bonus = 0.1f;
+    float chance_to_spawn_brick_bonus = 0.5f;
 
+    float bonus_pad_speed_modifier = 0.1f;
     float bonus_pad_size_modifier = 0.1f;
+
+    float bonus_ball_speed_modifier = 0.1f;
+    float bonus_ball_size_modifier = 0.1f;
+
+    float bonus_add_health = 2.0f;
+
+    float bonus_score_modifier = 10.0f;
+
+    float bonus_new_ball = 1.0f;
 
     Vect calculate_brick_size() const
     {
@@ -96,6 +125,7 @@ class Arkanoid
 public:
     WorldSpace world_space;
     ArkanoidSettings current_settings;
+    ImVec4 backdround_color = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
 
     virtual ~Arkanoid() = default;
     virtual void reset(const ArkanoidSettings& settings) = 0;

@@ -113,4 +113,12 @@ private:
 
     void draw_game_play_info_ui(ImGuiIO& io, ImDrawList& draw_list) const;
     ImVec2 draw_text_on_white_background(ImDrawList& draw_list, const char* text, float x, float y) const;
+
+    bool lost_life_animation_in_progress = false;
+    float max_red_value = 0.3f;
+    float min_red_value = 0.0f;
+
+    float lost_life_animation_speed = 1.5f;
+
+    void update_background_lost_life_animation(float elapsed);
 };

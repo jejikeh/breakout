@@ -7,19 +7,19 @@
 #ifdef USE_ARKANOID_IMPL
 Arkanoid* create_arkanoid()
 {
-    return new ArkanoidImpl();
+    return (Arkanoid*)new ArkanoidImpl();
 }
 #endif
 
-ArkanoidImpl::ArkanoidImpl()
+ArkanoidImpl::ArkanoidImpl() : Arkanoid()
 {
-    balls.push_back(std::make_unique<Ball>(this, 0, 0));
+    balls.push_back(std::make_unique<Ball>((Arkanoid*)this, 0, 0));
 
-    pad = std::make_unique<Pad>(this, 0, 0);
+    pad = std::make_unique<Pad>((Arkanoid*)this, 0, 0);
 
     current_settings = {};
 
-    bonuse_message = std::make_unique<BonusUIMessage>(this);
+    bonuse_message = std::make_unique<BonusUIMessage>((Arkanoid*)this);
 }
 
 void ArkanoidImpl::reset(const ArkanoidSettings& settings)
@@ -70,6 +70,7 @@ void ArkanoidImpl::update(ImGuiIO& io, ArkanoidDebugData& debug_data, float elap
         update_pad(io, debug_data, elapsed);
         update_bonuses(io, debug_data, elapsed);
         update_bonuses_message(io, debug_data, elapsed);
+        update_background_lost_life_animation(elapsed);
 
         if (io.KeysDown[GLFW_KEY_ESCAPE])
         {
@@ -190,7 +191,7 @@ void ArkanoidImpl::draw_blocks(ImGuiIO& io, ImDrawList& draw_list) const
 
         const auto size = block->transform.size * world_space.world_to_screen;
 
-        const auto color = block->state == BlockState::WithBonus ? ImColor(0, 255, 0) : ImColor(255, 0, 0);
+        const auto color = block->state == BlockState::WithBonus ? ImColor(255, 255, 0) : ImColor(255, 255, 255);
 
         draw_list.AddRect(screen_pos, screen_pos + size, color);
     }
@@ -243,12 +244,15 @@ void ArkanoidImpl::handle_ball_hit_edge(Ball* ball, ImGuiIO& io, ArkanoidDebugDa
     }
     else if (ball->transform.pos.y > (world_space.world_size.y - ball->radius()))
     {
+        // @Note(jejikeh): Bottom screen edge
         ball->transform.pos.y -= (ball->transform.pos.y - (world_space.world_size.y - ball->radius())) * 2.0f;
         ball->velocity.y *= -1.0f;
 
         add_debug_hit(debug_data, ball->transform.pos, Vect(0.0f, -1.0f));
 
         game_state.decrement_lives();
+
+        lost_life_animation_in_progress = true;
     }
 }
 
@@ -305,12 +309,11 @@ float ArkanoidImpl::calculate_brick_offset_to_center_x(const ArkanoidSettings& s
 
 void ArkanoidImpl::init_blocks(const ArkanoidSettings& settings)
 {
-    // @Note(jejikeh): Initialize bricks only once
     if (blocks.empty())
     {
         for (int i = 0; i < settings.bricks_columns_max * settings.bricks_rows_max; i++)
         {
-            blocks.push_back(std::make_unique<Block>(this, 0, 0));
+            blocks.push_back(std::make_unique<Block>((Arkanoid*)this, 0, 0));
         }
     }
     else
@@ -373,10 +376,10 @@ void ArkanoidImpl::draw_game_play_info_ui(ImGuiIO& io, ImDrawList& draw_list) co
     const auto world_size = current_settings.world_size;
 
     const auto text = string_format("\tScore: \t\n\t%d", game_state.score);
-    const auto text_size = draw_text_on_white_background(draw_list, text.c_str(), world_size[0], world_size[1] * 0.9f);
+    const auto text_size = draw_text_on_white_background(draw_list, text.c_str(), world_size.x, world_size.y * 0.9f);
 
     const auto lives_text = string_format("\tLives: \t\n\t%d", game_state.lives);
-    draw_text_on_white_background(draw_list, lives_text.c_str(), world_size[0], world_size[1] - text_size.y);
+    draw_text_on_white_background(draw_list, lives_text.c_str(), world_size.x, world_size.y - text_size.y);
 };
 
 ImVec2 ArkanoidImpl::draw_text_on_white_background(ImDrawList& draw_list, const char* text, float x, float y) const
@@ -450,10 +453,18 @@ void ArkanoidImpl::apply_bonus(Bonus* bonus)
     }
     case BonusType::NewBall:
     {
-        balls.push_back(std::make_unique<Ball>(this, pad.get()->transform.pos.x, pad.get()->transform.pos.y));
+        balls.push_back(std::make_unique<Ball>((Arkanoid*)(this), pad.get()->transform.pos.x, pad.get()->transform.pos.y));
         balls.back().get()->reset(current_settings);
 
         break;
+    }
+    case BonusType::RandomizeGameField:
+    {
+        game_state.blocks_destroyed = 0;
+        for (auto& block : blocks)
+        {
+            block->state = static_cast<BlockState>((rand() % static_cast<int>((int)BlockState::Count - 1)) + 1);
+        }
     }
     default:
         break;
@@ -464,12 +475,7 @@ void ArkanoidImpl::update_bonuses(ImGuiIO& io, ArkanoidDebugData& debug_data, fl
 {
     for (auto& bonus : bonuses)
     {
-        if (!bonus->enabled)
-        {
-            continue;
-        }
-
-        bonus->transform.pos.y += bonus->fall_speed * elapsed;
+        bonus->update(io, debug_data, elapsed);
 
         if (bonus->cirlce_collider->check_collision_with_transform(pad->transform))
         {
@@ -479,6 +485,8 @@ void ArkanoidImpl::update_bonuses(ImGuiIO& io, ArkanoidDebugData& debug_data, fl
             bonuse_message.get()->show(message_text);
 
             bonus->enabled = false;
+
+            add_debug_hit(debug_data, bonus->transform.pos, Vect(0.0f, -1.0f));
         }
     }
 
@@ -508,6 +516,33 @@ void ArkanoidImpl::spawn_random_bonus(int x, int y)
         return;
     }
 
-    bonuses.push_back(std::make_unique<Bonus>(this, x, y));
+    bonuses.push_back(std::make_unique<Bonus>((Arkanoid*)this, x, y));
     bonuses.back().get()->reset(current_settings);
+}
+
+void ArkanoidImpl::update_background_lost_life_animation(float elapsed)
+{
+    static float red_value = 0.0f;
+
+    if (lost_life_animation_in_progress)
+    {
+        red_value += elapsed * lost_life_animation_speed;
+
+        if (red_value >= max_red_value)
+        {
+            lost_life_animation_in_progress = false;
+            red_value = max_red_value;
+        }
+    }
+    else if (red_value > 0.0f)
+    {
+        red_value -= elapsed * lost_life_animation_speed;
+
+        if (red_value <= min_red_value)
+        {
+            red_value = min_red_value;
+        }
+    }
+
+    backdround_color.x = red_value;
 }

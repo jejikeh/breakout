@@ -85,8 +85,6 @@ struct ArkanoidSettingsExtended : ArkanoidSettings
 
 int main(int, char**)
 {
-    // @Note(jejikeh): I just refactor some of code to separate functions. Just helps me figoure out what's going on.
-
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
 
@@ -107,8 +105,6 @@ int main(int, char**)
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
 
-    ImVec4 clear_color = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-
     // Create gameplay and settings classes
     ArkanoidDebugData arkanoid_debug_data;
     ArkanoidSettingsExtended arkanoid_settings;
@@ -121,11 +117,6 @@ int main(int, char**)
 
     while (!glfwWindowShouldClose(window))
     {
-        // Poll and handle events (inputs, window resize, etc.)
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         glfwPollEvents();
 
         // Start the Dear ImGui frame
@@ -233,6 +224,48 @@ int main(int, char**)
                 arkanoid_settings.bonus_pad_size_modifier_min,
                 arkanoid_settings.bonus_pad_size_modifier_max);
 
+            ImGui::SliderFloat(
+                "Pad speed modifier",
+                &arkanoid_settings.bonus_pad_speed_modifier,
+                arkanoid_settings.bonus_pad_speed_modifier_min,
+                arkanoid_settings.bonus_pad_speed_modifier_max);
+
+            ImGui::SliderFloat(
+                "Ball size modifier",
+                &arkanoid_settings.bonus_ball_size_modifier,
+                arkanoid_settings.bonus_ball_size_modifier_min,
+                arkanoid_settings.bonus_ball_size_modifier_max);
+
+            ImGui::SliderFloat(
+                "Ball speed modifier",
+                &arkanoid_settings.bonus_ball_speed_modifier,
+                arkanoid_settings.bonus_ball_speed_modifier_min,
+                arkanoid_settings.bonus_ball_speed_modifier_max);
+
+            ImGui::SliderFloat(
+                "Ball speed modifier",
+                &arkanoid_settings.bonus_ball_speed_modifier,
+                arkanoid_settings.bonus_ball_speed_modifier_min,
+                arkanoid_settings.bonus_ball_speed_modifier_max);
+
+            ImGui::SliderFloat(
+                "Add Health",
+                &arkanoid_settings.bonus_add_health,
+                arkanoid_settings.bonus_add_health_min,
+                arkanoid_settings.bonus_add_health_max);
+
+            ImGui::SliderFloat(
+                "Score bonus",
+                &arkanoid_settings.bonus_score_modifier,
+                arkanoid_settings.bonus_score_modifier_min,
+                arkanoid_settings.bonus_score_modifier_max);
+
+            ImGui::SliderFloat(
+                "Ball count",
+                &arkanoid_settings.bonus_new_ball,
+                arkanoid_settings.bonus_new_ball_min,
+                arkanoid_settings.bonus_new_ball_max);
+
             ImGui::Spacing();
 
             if (ImGui::Button("Reset"))
@@ -317,7 +350,11 @@ int main(int, char**)
 
         glViewport(0, 0, display_w, display_h);
 
-        glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+        glClearColor(
+            arkanoid->backdround_color.x * arkanoid->backdround_color.w,
+            arkanoid->backdround_color.y * arkanoid->backdround_color.w,
+            arkanoid->backdround_color.z * arkanoid->backdround_color.w,
+            arkanoid->backdround_color.w);
 
         glClear(GL_COLOR_BUFFER_BIT);
 

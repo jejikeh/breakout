@@ -20,9 +20,6 @@ struct BonusUIMessage : Entity
 
         enabled = true;
 
-        fprintf(stderr, "%s\n", message.c_str());
-        fprintf(stderr, "%f\n", time);
-
         current_time = time;
     }
 
@@ -37,8 +34,6 @@ struct BonusUIMessage : Entity
         {
             enabled = false;
         }
-
-        printf("%f \n", current_time);
 
         current_time -= elapsed;
     }

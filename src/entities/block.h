@@ -9,7 +9,8 @@ enum class BlockState
 {
     Dead,
     Normal,
-    WithBonus
+    WithBonus,
+    Count
 };
 
 struct Block : Entity
